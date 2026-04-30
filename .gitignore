@@ -4,3 +4,4 @@ __pycache__/
 .claude/
 .vscode/
 *.egg-info/
+server.log

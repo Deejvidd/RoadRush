@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Road Rush</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ── WORLD BACKGROUND (animated grid behind game) ────────── -->
+  <canvas id="world-bg"></canvas>
+
+  <!-- ── MAIN MENU ──────────────────────────────────────────────── -->
+  <div id="menu-screen">
+    <canvas id="menu-bg"></canvas>
+    <div class="menu-content">
+      <div class="menu-badge">Neural Network Powered</div>
+      <h1 class="menu-title">Road Rush</h1>
+      <p class="menu-subtitle">AI &nbsp; Learning &nbsp; Lab</p>
+      <div class="menu-divider"></div>
+      <button class="menu-start-btn" id="menu-start">Play</button>
+      <p class="menu-hint">
+        <kbd>&larr;</kbd> <kbd>&rarr;</kbd> or <kbd>A</kbd> <kbd>D</kbd> to steer
+      </p>
+    </div>
+  </div>
+
+  <!-- ── GAME SCREEN ────────────────────────────────────────────── -->
+  <div id="game-screen">
+
+    <!-- Left: Canvas area -->
+    <div>
+      <div class="game-title-strip">
+        <span class="game-title-text">Road Rush</span>
+        <span class="game-title-sub">AI Lab</span>
+      </div>
+      <div id="hud">
+        <div>SCORE <span id="score-val">0</span></div>
+        <div>BEST <span id="best-val">0</span></div>
+        <div>LVL <span id="level-val">1</span></div>
+      </div>
+      <div id="canvas-wrap">
+        <canvas id="gc" width="480" height="720"></canvas>
+        <div id="overlay">
+          <div class="overlay-icon" id="ov-icon">💥</div>
+          <h2 id="ov-title"></h2>
+          <p id="ov-text"></p>
+          <div class="overlay-score-row" id="ov-score-row"></div>
+          <button id="ov-btn">RETRY</button>
+        </div>
+        <!-- Countdown overlay -->
+        <div id="countdown-overlay">
+          <span id="countdown-text"></span>
+        </div>
+        <!-- Debug overlay (toggle with ` key) -->
+        <div id="debug-overlay"></div>
+      </div>
+      <!-- AI Info Bar (shown when model loaded / AI on) -->
+      <div id="ai-info-bar" class="ai-info-bar hidden">
+        <span class="ai-info-dot"></span>
+        <span id="ai-info-text">AI Ready</span>
+      </div>
+      <div id="ctrl-hint">&larr; &rarr; steer &nbsp;&bull;&nbsp; Watch AI learn in real-time &nbsp;&bull;&nbsp; <kbd>`</kbd> debug</div>
+    </div>
+
+    <!-- Right: Control Panel -->
+    <div class="side-panel">
+
+      <!-- Primary Controls: RL + Sensors + Compare -->
+      <div class="panel-primary">
+        <button class="ctrl-btn ctrl-btn-mega" id="btn-ai">
+          <span class="ctrl-mega-icon">&#129302;</span>
+          <div class="ctrl-mega-body">
+            <div class="ctrl-mega-title">RL: Off</div>
+            <div class="ctrl-mega-sub">Reinforcement Learning</div>
+          </div>
+        </button>
+        <div class="btn-group-row" style="margin-top:6px">
+          <button class="ctrl-btn ctrl-btn-action" id="btn-sensors">
+            <span class="icon">&#128065;</span> Sensors
+          </button>
+          <button class="ctrl-btn ctrl-btn-action" id="btn-compare" disabled
+                  title="Play a human run first to enable comparison">
+            <span class="icon">&#128123;</span> Compare
+          </button>
+          <button class="ctrl-btn ctrl-btn-action" id="btn-exit-compare"
+                  style="display:none">
+            <span class="icon">&#10005;</span> Exit
+          </button>
+        </div>
+      </div>
+
+      <!-- Section: Learn from Human -->
+      <div class="panel-section">
+        <div class="panel-section-label">&#127918; Learn</div>
+        <div class="panel-card section-learn">
+          <div class="btn-group">
+            <button class="ctrl-btn ctrl-btn-secondary" id="btn-il-sessions">
+              <span class="icon">&#128196;</span> IL Sessions
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Training -->
+      <div class="panel-section">
+        <div class="panel-section-label">&#9889; Training</div>
+        <div class="panel-card section-train">
+          <div class="btn-group btn-group-row">
+            <button class="ctrl-btn" id="btn-fast-train">
+              <span class="icon">&#9889;</span> Fast Train
+            </button>
+            <button class="ctrl-btn" id="btn-snapshots">
+              <span class="icon">&#128247;</span> Snaps
+            </button>
+          </div>
+          <div class="btn-group" style="margin-top:5px">
+            <button class="ctrl-btn ctrl-btn-race" id="btn-model-race">
+              <span class="icon">&#9876;</span> Race Models
+            </button>
+          </div>
+          <canvas id="train-graph" width="166" height="86" style="margin-top:8px;display:block"></canvas>
+          <div class="graph-legend">
+            <span class="graph-legend-item"><span class="legend-dot" style="background:#00e5ff"></span>Score</span>
+            <span class="graph-legend-item"><span class="legend-dot" style="background:#4cff91"></span>Avg20</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Model -->
+      <div class="panel-section">
+        <div class="panel-section-label">&#128190; Model</div>
+        <div class="panel-card section-model">
+          <div class="btn-group btn-group-row">
+            <button class="ctrl-btn" id="btn-save">
+              <span class="icon">&#128190;</span> Save
+            </button>
+            <button class="ctrl-btn" id="btn-load">
+              <span class="icon">&#128194;</span> Load
+            </button>
+          </div>
+          <div class="btn-group" style="margin-top:5px">
+            <button class="ctrl-btn ctrl-btn-secondary" id="btn-params">
+              <span class="icon">&#9881;</span> Parameters
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Dashboard -->
+      <div class="panel-card status-card">
+        <div class="status-grid-v2">
+          <div class="stat-block">
+            <span class="stat-block-label"><span class="server-dot" id="srv-dot"></span>Server</span>
+            <span class="stat-block-value" id="srv-status">...</span>
+          </div>
+          <div class="stat-block">
+            <span class="stat-block-label">Episode</span>
+            <span class="stat-block-value" id="ep-val">0</span>
+          </div>
+          <div class="stat-block">
+            <span class="stat-block-label">Epsilon</span>
+            <span class="stat-block-value" id="eps-val">1.000</span>
+          </div>
+          <div class="stat-block">
+            <span class="stat-block-label">Avg (20)</span>
+            <span class="stat-block-value" id="avg-val">0</span>
+          </div>
+        </div>
+        <div class="stat-demos-row">
+          <span class="stat-block-label">Demos recorded:</span>
+          <span class="stat-block-value" id="demo-val">0</span>
+        </div>
+      </div>
+
+      <!-- Footer: Leaderboard + Sound -->
+      <div class="panel-footer-row">
+        <button class="ctrl-btn ctrl-btn-icon" id="btn-leaderboard" title="Leaderboard">&#127942;</button>
+        <button class="ctrl-btn ctrl-btn-icon" id="btn-sound" title="Sound">&#128264;</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── PARAMETERS MODAL (DQN — read-only) ───────────────────── -->
+  <div id="params-modal" class="modal-backdrop">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3>&#129504; DQN Hyperparameters</h3>
+        <button class="modal-close" id="params-close">&times;</button>
+      </div>
+      <p class="modal-desc">Current DQN configuration (Double DQN + experience replay). Fixed for stable learning.</p>
+
+      <div class="param-group">
+        <div class="param-row">
+          <div class="param-info">
+            <span class="param-name">Discount Factor (&gamma;)</span>
+            <span class="param-hint">How far-sighted the AI is. 0.99 means it plans many steps ahead.</span>
+          </div>
+          <div class="param-control"><span class="param-val" id="pval-gamma">0.99</span></div>
+        </div>
+        <div class="param-row">
+          <div class="param-info">
+            <span class="param-name">Learning Rate</span>
+            <span class="param-hint">Step size for Adam optimizer updates to the Q-network weights.</span>
+          </div>
+          <div class="param-control"><span class="param-val" id="pval-lr">5e-4</span></div>
+        </div>
+        <div class="param-row">
+          <div class="param-info">
+            <span class="param-name">Replay Buffer Size</span>
+            <span class="param-hint">Max transitions stored. Older ones are discarded when full.</span>
+          </div>
+          <div class="param-control"><span class="param-val" id="pval-buffer">50000</span></div>
+        </div>
+        <div class="param-row">
+          <div class="param-info">
+            <span class="param-name">Batch Size</span>
+            <span class="param-hint">Transitions sampled from the buffer per gradient step.</span>
+          </div>
+          <div class="param-control"><span class="param-val" id="pval-batch">64</span></div>
+        </div>
+        <div class="param-row">
+          <div class="param-info">
+            <span class="param-name">Target Net &tau; (Polyak)</span>
+            <span class="param-hint">Soft update rate for the target network. Smaller = slower, more stable target.</span>
+          </div>
+          <div class="param-control"><span class="param-val" id="pval-tau">0.005</span></div>
+        </div>
+        <div class="param-row">
+          <div class="param-info">
+            <span class="param-name">Warmup Steps</span>
+            <span class="param-hint">Transitions collected before any gradient steps begin.</span>
+          </div>
+          <div class="param-control"><span class="param-val" id="pval-warmup">1000</span></div>
+        </div>
+        <div class="param-row">
+          <div class="param-info">
+            <span class="param-name">Epsilon (current)</span>
+            <span class="param-hint">Current exploration rate. Decays from 1.0 → 0.05 over training.</span>
+          </div>
+          <div class="param-control"><span class="param-val" id="pval-epsilon">1.0</span></div>
+        </div>
+        <div class="param-row">
+          <div class="param-info">
+            <span class="param-name">Epsilon Decay Steps</span>
+            <span class="param-hint">Steps over which epsilon linearly decays from start to end.</span>
+          </div>
+          <div class="param-control"><span class="param-val" id="pval-eps-decay">80000</span></div>
+        </div>
+        <div class="param-row">
+          <div class="param-info">
+            <span class="param-name">Gradient Steps</span>
+            <span class="param-hint">Total Q-network updates performed so far this session.</span>
+          </div>
+          <div class="param-control"><span class="param-val" id="pval-grad-steps">0</span></div>
+        </div>
+        <div class="param-row">
+          <div class="param-info">
+            <span class="param-name">Reward Scale</span>
+            <span class="param-hint">All rewards divided by this value to stabilise Q-value targets.</span>
+          </div>
+          <div class="param-control"><span class="param-val" id="pval-reward-scale">0.1</span></div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="ctrl-btn" id="params-close-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FAST TRAIN MODAL ───────────────────────────────────── -->
+  <div id="fast-train-modal" class="modal-backdrop">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3>Fast Headless Training</h3>
+        <button class="modal-close" id="fast-train-close">&times;</button>
+      </div>
+      <p class="modal-desc">Train the AI at maximum speed without rendering. Snapshots are saved at key episodes so you can compare generations.</p>
+
+      <div class="param-group">
+        <div class="param-row">
+          <div class="param-info">
+            <span class="param-name">Episodes</span>
+            <span class="param-hint">How many games to play. More = better AI. 500 takes ~1-2 min.</span>
+          </div>
+          <div class="param-control">
+            <input type="range" class="param-slider" id="sl-ft-episodes" min="50" max="2000" step="50" value="500">
+            <span class="param-val" id="val-ft-episodes">500</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="ft-progress-area" style="display:none;">
+        <div class="ft-progress-bar-wrap">
+          <div class="ft-progress-bar" id="ft-bar"></div>
+        </div>
+        <div class="ft-stats" id="ft-stats">Starting...</div>
+        <div class="ft-snapshots-mini" id="ft-snapshots-mini"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="ctrl-btn active-ai" id="ft-start-btn">Start Training</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SNAPSHOTS MODAL ──────────────────────────────────────── -->
+  <div id="snapshots-modal" class="modal-backdrop">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3>Model Snapshots</h3>
+        <button class="modal-close" id="snapshots-close">&times;</button>
+      </div>
+      <p class="modal-desc">Load any saved generation to see how the AI performed at different stages of learning.</p>
+      <div id="snapshots-list" class="snapshots-list">
+        <div class="ft-stats">No snapshots yet. Run Fast Train first.</div>
+      </div>
+      <div class="modal-footer">
+        <button class="ctrl-btn" id="btn-replay-all">
+          <span class="icon">&#9654;</span> Auto-Replay All Generations
+        </button>
+        <button class="ctrl-btn ctrl-btn-race" id="btn-race-from-snaps">
+          <span class="icon">&#9876;</span> Race 3 Models
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LEADERBOARD MODAL ────────────────────────────────────── -->
+  <div id="leaderboard-modal" class="modal-backdrop">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3>Leaderboard</h3>
+        <button class="modal-close" id="leaderboard-close">&times;</button>
+      </div>
+      <p class="modal-desc">Top scores from all runs on this machine.</p>
+      <div id="leaderboard-list" class="leaderboard-list"></div>
+      <div class="modal-footer">
+        <button class="ctrl-btn" id="btn-clear-leaderboard">Clear All Scores</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── IL ONBOARDING MODAL ──────────────────────────────────────────── -->
+  <div id="il-onboard-modal" class="modal-backdrop">
+    <div class="modal-panel il-flow-panel">
+      <div class="modal-header">
+        <h3>&#129504; Imitation Learning</h3>
+      </div>
+      <p class="modal-desc">Teach the AI by playing a few rounds yourself. It will watch your moves and learn from them before training on its own.</p>
+      <div class="il-options">
+        <button class="il-option-btn il-option-yes" id="il-onboard-yes">
+          <span class="il-option-icon">&#127918;</span>
+          <div>
+            <div class="il-option-title">Yes, teach the AI</div>
+            <div class="il-option-desc">Play a few rounds — AI learns from your moves before RL</div>
+          </div>
+        </button>
+        <button class="il-option-btn" id="il-onboard-no">
+          <span class="il-option-icon">&#9889;</span>
+          <div>
+            <div class="il-option-title">Skip — use RL only</div>
+            <div class="il-option-desc">AI starts exploring randomly and improves over time</div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── IL DECISION MODAL (after crash while recording) ──────────────── -->
+  <div id="il-decision-modal" class="modal-backdrop">
+    <div class="modal-panel il-flow-panel">
+      <div class="modal-header">
+        <h3>&#9654; Recording Paused</h3>
+      </div>
+      <p class="modal-desc">You have <strong id="il-demo-count">0</strong> demos recorded. What would you like to do?</p>
+      <div class="il-options">
+        <button class="il-option-btn" id="il-decision-more">
+          <span class="il-option-icon">&#9654;</span>
+          <div>
+            <div class="il-option-title">Record more demos</div>
+            <div class="il-option-desc">Keep playing to give the AI more examples</div>
+          </div>
+        </button>
+        <button class="il-option-btn il-option-yes" id="il-decision-pretrain">
+          <span class="il-option-icon">&#129504;</span>
+          <div>
+            <div class="il-option-title">Pretrain now</div>
+            <div class="il-option-desc">Train the AI on your demos, then switch to RL</div>
+          </div>
+        </button>
+        <button class="il-option-btn il-option-skip" id="il-decision-skip">
+          <span class="il-option-icon">&#9889;</span>
+          <div>
+            <div class="il-option-title">Play without IL</div>
+            <div class="il-option-desc">Discard demos and play / train from scratch</div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── IL PROGRESS / RESULT MODAL ───────────────────────────────────── -->
+  <div id="il-progress-modal" class="modal-backdrop">
+    <div class="modal-panel il-flow-panel">
+      <div class="modal-header">
+        <h3 id="il-progress-title">&#129504; Training on Your Demos...</h3>
+      </div>
+      <div class="ft-progress-bar-wrap" id="il-progress-wrap">
+        <div class="ft-progress-bar" id="il-progress-bar" style="width:0%"></div>
+      </div>
+      <div class="ft-stats" id="il-progress-stats">Preparing...</div>
+      <div id="il-result-area" style="display:none">
+        <div class="il-result-accuracy" id="il-result-acc"></div>
+        <p class="modal-desc" id="il-result-msg"></p>
+        <div class="modal-footer">
+          <button class="ctrl-btn active-ai" id="il-result-start-rl">&#129302; Start AI (RL)</button>
+          <button class="ctrl-btn" id="il-result-record-more">&#9654; Record More</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── IL SESSIONS MODAL ─────────────────────────────────────────────── -->
+  <div id="il-sessions-modal" class="modal-backdrop">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3>&#128196; Imitation Learning Sessions</h3>
+        <button class="modal-close" id="il-sessions-close">&times;</button>
+      </div>
+      <p class="modal-desc">Past pretrain sessions — load any to restore a human-taught model.</p>
+      <div id="il-sessions-list" class="snapshots-list">
+        <div class="ft-stats">No sessions saved yet. Pretrain first.</div>
+      </div>
+      <div class="modal-footer">
+        <button class="ctrl-btn" id="btn-il-sessions-refresh">
+          <span class="icon">&#8635;</span> Refresh
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODEL RACE SETUP MODAL ─────────────────────────────────── -->
+  <div id="model-race-modal" class="modal-backdrop">
+    <div class="modal-panel race-setup-panel">
+      <div class="modal-header">
+        <h3>&#9876; Race 3 Models</h3>
+        <button class="modal-close" id="model-race-close">&times;</button>
+      </div>
+      <p class="modal-desc">Pick 3 snapshots to race side-by-side on identical obstacles. Great for comparing early vs final generations.</p>
+
+      <div class="race-setup-grid">
+        <!-- Lane 1 (cyan) -->
+        <div class="race-setup-slot" style="--lane-color:rgba(0,229,255,0.3)">
+          <div class="race-setup-lane-badge" style="color:#00e5ff;border-color:rgba(0,229,255,0.4)">&#9632; Lane 1</div>
+          <select id="race-sel-0" class="race-select"></select>
+          <input id="race-lbl-0" class="race-label-input" placeholder="Label e.g. Gen 1 — Bad" value="Gen 1">
+        </div>
+        <!-- Lane 2 (green) -->
+        <div class="race-setup-slot" style="--lane-color:rgba(76,255,145,0.3)">
+          <div class="race-setup-lane-badge" style="color:#4cff91;border-color:rgba(76,255,145,0.4)">&#9632; Lane 2</div>
+          <select id="race-sel-1" class="race-select"></select>
+          <input id="race-lbl-1" class="race-label-input" placeholder="Label e.g. Mid" value="Mid">
+        </div>
+        <!-- Lane 3 (gold) -->
+        <div class="race-setup-slot" style="--lane-color:rgba(255,215,0,0.3)">
+          <div class="race-setup-lane-badge" style="color:#ffd700;border-color:rgba(255,215,0,0.4)">&#9632; Lane 3</div>
+          <select id="race-sel-2" class="race-select"></select>
+          <input id="race-lbl-2" class="race-label-input" placeholder="Label e.g. Final — Best" value="Final">
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="ctrl-btn active-ai" id="race-start-btn" style="flex:1;justify-content:center">
+          <span class="icon">&#9654;</span> Start Race
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODEL RACE SCREEN ───────────────────────────────────────── -->
+  <div id="model-race-screen" class="hidden">
+
+    <!-- Header bar -->
+    <div class="race-header">
+      <div class="race-header-title">&#9876; MODEL RACE</div>
+      <div class="race-score-strip">
+        <div class="race-score-chip" style="border-color:rgba(0,229,255,0.4);color:#00e5ff">
+          <span class="race-chip-label" id="race-label-0">Lane 1</span>
+          <span class="race-chip-score" id="race-score-0">0</span>
+        </div>
+        <div class="race-score-chip" style="border-color:rgba(76,255,145,0.4);color:#4cff91">
+          <span class="race-chip-label" id="race-label-1">Lane 2</span>
+          <span class="race-chip-score" id="race-score-1">0</span>
+        </div>
+        <div class="race-score-chip" style="border-color:rgba(255,215,0,0.4);color:#ffd700">
+          <span class="race-chip-label" id="race-label-2">Lane 3</span>
+          <span class="race-chip-score" id="race-score-2">0</span>
+        </div>
+      </div>
+      <div class="race-header-right">
+        <div id="race-result-bar" class="race-result-bar" style="display:none"></div>
+        <button id="race-replay-btn" class="ctrl-btn" style="display:none;white-space:nowrap">
+          <span class="icon">&#8635;</span> Replay
+        </button>
+        <button id="race-exit-btn" class="ctrl-btn" style="color:#ff6b6b;border-color:rgba(255,107,107,0.3)">
+          &#10005; Exit
+        </button>
+      </div>
+    </div>
+
+    <!-- Three canvases -->
+    <div class="race-canvases">
+      <div class="race-slot-wrap">
+        <div class="race-slot-badge" id="race-canvas-badge-0" style="color:#00e5ff;border-color:rgba(0,229,255,0.35)">Lane 1</div>
+        <div class="race-canvas-frame" style="--glow:#00e5ff">
+          <canvas id="race-canvas-0" width="480" height="720"></canvas>
+        </div>
+      </div>
+      <div class="race-slot-wrap">
+        <div class="race-slot-badge" id="race-canvas-badge-1" style="color:#4cff91;border-color:rgba(76,255,145,0.35)">Lane 2</div>
+        <div class="race-canvas-frame" style="--glow:#4cff91">
+          <canvas id="race-canvas-1" width="480" height="720"></canvas>
+        </div>
+      </div>
+      <div class="race-slot-wrap">
+        <div class="race-slot-badge" id="race-canvas-badge-2" style="color:#ffd700;border-color:rgba(255,215,0,0.35)">Lane 3</div>
+        <div class="race-canvas-frame" style="--glow:#ffd700">
+          <canvas id="race-canvas-2" width="480" height="720"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
