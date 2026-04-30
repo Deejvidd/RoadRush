@@ -36,88 +36,110 @@ const ghost = { seed: null, frames: [], duration: 0, hasData: false };
 
 //  ANIMATED MENU BACKGROUND
 (function initMenuBg() {
-  const mc  = document.getElementById('menu-bg');
-  const mctx = mc.getContext('2d');
-  let mW, mH, mFrame = 0;
-  const cars = [];
-  const LANE_COUNT = 5;
+  const canvas = document.getElementById('menu-bg');
+  const ctx = canvas.getContext('2d');
+  let time = 0;
 
   function resize() {
-    mW = mc.width  = window.innerWidth;
-    mH = mc.height = window.innerHeight;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
   }
   resize();
   window.addEventListener('resize', resize);
 
-  // Generate some background cars
-  for (let i = 0; i < 12; i++) {
-    cars.push({
-      lane: Math.floor(Math.random() * LANE_COUNT),
-      y: Math.random() * mH,
-      speed: 1 + Math.random() * 2.5,
-      color: ['#e74c3c','#e67e22','#9b59b6','#3498db','#1abc9c','#00e5ff'][Math.floor(Math.random()*6)],
-      w: 20 + Math.random() * 8,
-      h: 36 + Math.random() * 12,
-      alpha: 0.06 + Math.random() * 0.1
-    });
-  }
+  const stars = Array.from({ length: 180 }, () => ({
+    x: Math.random(), y: Math.random() * 0.5,
+    r: Math.random() * 1.4 + 0.2,
+    a: Math.random() * 0.55 + 0.15,
+    speed: Math.random() * 2 + 1,
+  }));
+  const streaks = Array.from({ length: 18 }, (_, i) => ({
+    side: i % 2 === 0 ? -1 : 1,
+    xOff: Math.sin(i * 2.3) * 0.5 + 0.5,
+    phase: Math.random(),
+    speed: 0.4 + Math.random() * 0.4,
+  }));
 
   function drawMenuFrame() {
-    if (document.getElementById('menu-screen').classList.contains('hidden')) return;
-    mFrame++;
-    mctx.fillStyle = '#08080f';
-    mctx.fillRect(0, 0, mW, mH);
-
-    // Draw subtle road lanes
-    const laneW = 40;
-    const totalW = LANE_COUNT * laneW;
-    const startX = (mW - totalW) / 2;
-
-    // Road surface
-    mctx.fillStyle = 'rgba(20, 20, 35, 0.8)';
-    mctx.fillRect(startX - 10, 0, totalW + 20, mH);
-
-    // Lane markings
-    const dashOff = mFrame * 1.5;
-    mctx.strokeStyle = 'rgba(255, 200, 60, 0.08)';
-    mctx.lineWidth = 1;
-    mctx.setLineDash([30, 20]);
-    for (let i = 1; i < LANE_COUNT; i++) {
-      mctx.lineDashOffset = -dashOff;
-      mctx.beginPath();
-      mctx.moveTo(startX + i * laneW, 0);
-      mctx.lineTo(startX + i * laneW, mH);
-      mctx.stroke();
+    if (document.getElementById('menu-screen').classList.contains('hidden')) {
+      requestAnimationFrame(drawMenuFrame);
+      return;
     }
-    mctx.setLineDash([]);
+    const Wc = canvas.width, Hc = canvas.height;
 
-    // Edge lines
-    mctx.strokeStyle = 'rgba(255,255,255,0.04)';
-    mctx.beginPath();
-    mctx.moveTo(startX - 10, 0); mctx.lineTo(startX - 10, mH);
-    mctx.moveTo(startX + totalW + 10, 0); mctx.lineTo(startX + totalW + 10, mH);
-    mctx.stroke();
+    const sky = ctx.createLinearGradient(0, 0, 0, Hc * 0.55);
+    sky.addColorStop(0, '#04030c');
+    sky.addColorStop(1, '#0a071a');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, Wc, Hc);
 
-    // Draw cars
-    cars.forEach(c => {
-      c.y += c.speed;
-      if (c.y > mH + 50) { c.y = -60; c.lane = Math.floor(Math.random() * LANE_COUNT); }
-      const cx = startX + c.lane * laneW + laneW / 2;
-      mctx.globalAlpha = c.alpha;
-      mctx.fillStyle = c.color;
-      mctx.beginPath();
-      mctx.roundRect(cx - c.w/2, c.y, c.w, c.h, 3);
-      mctx.fill();
+    const vx = Wc * 0.5, vy = Hc * 0.40, hw = Wc * 0.27;
+    const roadGrad = ctx.createLinearGradient(0, vy, 0, Hc);
+    roadGrad.addColorStop(0, '#08061a');
+    roadGrad.addColorStop(1, '#0d0b22');
+    ctx.fillStyle = roadGrad;
+    ctx.beginPath();
+    ctx.moveTo(vx - 12, vy); ctx.lineTo(vx + 12, vy);
+    ctx.lineTo(Wc / 2 + hw, Hc * 1.05); ctx.lineTo(Wc / 2 - hw, Hc * 1.05);
+    ctx.closePath(); ctx.fill();
+
+    const hg = ctx.createRadialGradient(Wc / 2, vy, 0, Wc / 2, vy, Wc * 0.5);
+    hg.addColorStop(0, 'rgba(139,92,246,0.18)');
+    hg.addColorStop(0.4, 'rgba(80,40,180,0.05)');
+    hg.addColorStop(1, 'transparent');
+    ctx.fillStyle = hg;
+    ctx.fillRect(0, vy - 100, Wc, 200);
+
+    [[-1, '#8b5cf6'], [1, '#f59e0b']].forEach(([side, color]) => {
+      const x1 = vx + side * 12, x2 = Wc / 2 + side * hw;
+      const g = ctx.createLinearGradient(x1, vy, x2, Hc);
+      g.addColorStop(0, color + '00');
+      g.addColorStop(0.5, color + '66');
+      g.addColorStop(1, color + 'bb');
+      ctx.strokeStyle = g; ctx.lineWidth = 2.5;
+      ctx.shadowColor = color; ctx.shadowBlur = 6;
+      ctx.beginPath(); ctx.moveTo(x1, vy); ctx.lineTo(x2, Hc); ctx.stroke();
+      ctx.shadowBlur = 0;
     });
-    mctx.globalAlpha = 1;
 
-    // Subtle vignette
-    const grad = mctx.createRadialGradient(mW/2, mH/2, mH*0.2, mW/2, mH/2, mH*0.8);
-    grad.addColorStop(0, 'transparent');
-    grad.addColorStop(1, 'rgba(8,8,15,0.7)');
-    mctx.fillStyle = grad;
-    mctx.fillRect(0, 0, mW, mH);
+    for (let i = 0; i < 14; i++) {
+      const t = ((i / 14) + time * 0.38) % 1;
+      const y = vy + t * (Hc - vy);
+      const dw = 2 + t * 7, dh = 6 + t * 32;
+      const da = Math.min(t * 2.2, 0.85);
+      ctx.fillStyle = `rgba(245,158,11,${da * 0.7})`;
+      ctx.fillRect(Wc / 2 - dw / 2, y - dh / 2, dw, dh);
+    }
 
+    stars.forEach(s => {
+      const tw = 0.75 + Math.sin(time * s.speed + s.x * 12) * 0.25;
+      ctx.beginPath();
+      ctx.arc(s.x * Wc, s.y * Hc, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(200,180,255,${s.a * tw})`;
+      ctx.fill();
+    });
+
+    streaks.forEach(s => {
+      const ph = (s.phase + time * s.speed) % 1;
+      if (ph < 0.04) return;
+      const xBase = s.side > 0 ? 0.56 + s.xOff * 0.14 : 0.44 - s.xOff * 0.14;
+      const x = xBase * Wc, y = ph * Hc;
+      const len = ph * 55 + 10;
+      const a = Math.min(ph * 1.8, 0.15);
+      const g = ctx.createLinearGradient(x, y - len, x, y);
+      g.addColorStop(0, 'transparent');
+      g.addColorStop(1, `rgba(139,92,246,${a})`);
+      ctx.strokeStyle = g; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x, y - len); ctx.lineTo(x, y); ctx.stroke();
+    });
+
+    const fog = ctx.createLinearGradient(0, Hc * 0.72, 0, Hc);
+    fog.addColorStop(0, 'transparent');
+    fog.addColorStop(1, 'rgba(4,3,12,0.97)');
+    ctx.fillStyle = fog;
+    ctx.fillRect(0, Hc * 0.72, Wc, Hc * 0.28);
+
+    time += 0.016;
     requestAnimationFrame(drawMenuFrame);
   }
   drawMenuFrame();
@@ -299,22 +321,85 @@ const ghost = { seed: null, frames: [], duration: 0, hasData: false };
 // ══════════════════════════════════════════════════════════════════════════════
 //  MENU → GAME TRANSITION
 // ══════════════════════════════════════════════════════════════════════════════
-document.getElementById('menu-start').addEventListener('click', () => {
+function showRecordingBar() {
+  const bar = document.getElementById('ai-info-bar');
+  if (bar) {
+    bar.classList.remove('hidden');
+    document.getElementById('ai-info-text').textContent = 'Recording demos';
+  }
+}
+
+function hideRecordingBar() {
+  const bar = document.getElementById('ai-info-bar');
+  if (bar) bar.classList.add('hidden');
+}
+
+function startGameFromMenu(recordDemos = false) {
   SoundSystem.init();
   SoundSystem.playClick();
   document.getElementById('menu-screen').classList.add('hidden');
   document.getElementById('game-screen').classList.add('visible');
   setTimeout(() => {
     resetGame();
-    if (!ilFlow.onboardShown) {
-      ilFlow.onboardShown = true;
-      document.getElementById('il-onboard-modal').classList.add('open');
-    } else {
-      state.running = true;
-      loop();
-    }
+    ilFlow.onboardShown = true;
+    ilFlow.active = recordDemos;
+    ai.recording = recordDemos;
+    if (recordDemos) showRecordingBar();
+    else hideRecordingBar();
+    state.running = true;
+    loop();
   }, 600);
-});
+}
+
+document.getElementById('menu-start').addEventListener('click', () => startGameFromMenu(false));
+document.getElementById('menu-record').addEventListener('click', () => startGameFromMenu(true));
+
+function goToMenu() {
+  if (animId) cancelAnimationFrame(animId);
+  SoundSystem.stopEngine();
+  keys.left = keys.right = false;
+  state.running = false;
+  state.paused = false;
+  document.getElementById('pause-menu').classList.remove('open');
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('game-screen').classList.remove('visible');
+  const menu = document.getElementById('menu-screen');
+  menu.classList.remove('hidden');
+}
+
+function pauseGame() {
+  if (!state || !state.running || state.over) return;
+  state.running = false;
+  state.paused = true;
+  keys.left = keys.right = false;
+  if (animId) cancelAnimationFrame(animId);
+  SoundSystem.stopEngine();
+  document.getElementById('pause-menu').classList.add('open');
+  document.getElementById('btn-pause').classList.add('active');
+  document.getElementById('btn-pause').textContent = '▶';
+}
+
+function resumeGame() {
+  if (!state || !state.paused) return;
+  state.paused = false;
+  state.running = true;
+  document.getElementById('pause-menu').classList.remove('open');
+  document.getElementById('btn-pause').classList.remove('active');
+  document.getElementById('btn-pause').textContent = '⏸';
+  loop();
+}
+
+function restartGame() {
+  if (animId) cancelAnimationFrame(animId);
+  document.getElementById('pause-menu').classList.remove('open');
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('btn-pause').classList.remove('active');
+  document.getElementById('btn-pause').textContent = '⏸';
+  resetGame();
+  state.running = true;
+  state.paused = false;
+  loop();
+}
 
 // ── Numpy spawn sequences for all eval seeds (pre-generated to match train3_grid.py) ───
 // Each entry: [x_position, speed] — identical to HeadlessGame with the corresponding seed.
@@ -577,20 +662,31 @@ async function rlCrash(score) {
   }
 }
 
+function setRLButtonState() {
+  const btn = document.getElementById('btn-ai');
+  btn.innerHTML = ai.on
+    ? '<span class="ctrl-mega-icon">&#129302;</span><div class="ctrl-mega-body"><div class="ctrl-mega-title">RL Agent</div><div class="ctrl-mega-sub">● Active</div></div><span class="rl-switch" aria-hidden="true"><i></i></span>'
+    : '<span class="ctrl-mega-icon">&#129302;</span><div class="ctrl-mega-body"><div class="ctrl-mega-title">RL Agent</div><div class="ctrl-mega-sub">○ Offline</div></div><span class="rl-switch" aria-hidden="true"><i></i></span>';
+  btn.classList.toggle('active-ai', ai.on);
+}
+
+function updateLevelPips() {
+  document.querySelectorAll('.hud-lives i').forEach((pip, i) => {
+    pip.classList.toggle('active', i < Math.min(state.level, 3));
+  });
+}
+
+async function openHumanCrashPrompt() {
+  if (!ai.on && ai.recording && ilFlow.active) await flushBuffer();
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 //  BUTTONS
 // ══════════════════════════════════════════════════════════════════════════════
 
 document.getElementById('btn-ai').addEventListener('click', () => {
   ai.on = !ai.on;
-  const btn = document.getElementById('btn-ai');
-  if (ai.on) {
-    btn.innerHTML = '<span class="ctrl-mega-icon">&#129302;</span><div class="ctrl-mega-body"><div class="ctrl-mega-title">RL: On</div><div class="ctrl-mega-sub">Learning in progress</div></div>';
-    btn.classList.add('active-ai');
-  } else {
-    btn.innerHTML = '<span class="ctrl-mega-icon">&#129302;</span><div class="ctrl-mega-body"><div class="ctrl-mega-title">RL: Off</div><div class="ctrl-mega-sub">Reinforcement Learning</div></div>';
-    btn.classList.remove('active-ai');
-  }
+  setRLButtonState();
   if (ai.on && !state.running) {
     resetGame(); state.running = true;
     document.getElementById('overlay').style.display = 'none';
@@ -648,6 +744,18 @@ document.getElementById('btn-sound').addEventListener('click', () => {
   else if (state && state.running) SoundSystem.startEngine();
 });
 
+document.getElementById('btn-pause').addEventListener('click', () => {
+  if (state && state.paused) resumeGame();
+  else pauseGame();
+});
+document.getElementById('pause-resume').addEventListener('click', resumeGame);
+document.getElementById('pause-restart').addEventListener('click', restartGame);
+document.getElementById('pause-menu-btn').addEventListener('click', goToMenu);
+document.getElementById('btn-restart-bottom').addEventListener('click', restartGame);
+document.getElementById('btn-load-bottom').addEventListener('click', () => document.getElementById('btn-load').click());
+document.getElementById('btn-reset-panel').addEventListener('click', restartGame);
+document.getElementById('ov-menu-btn').addEventListener('click', goToMenu);
+
 // Click sound on all ctrl-btn presses
 document.querySelectorAll('.ctrl-btn').forEach(btn => {
   if (btn.id !== 'btn-sound' && btn.id !== 'menu-start') {
@@ -657,6 +765,11 @@ document.querySelectorAll('.ctrl-btn').forEach(btn => {
 
 // ── Keyboard ──────────────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (state && state.paused) resumeGame();
+    else pauseGame();
+    return;
+  }
   if (e.key === 'ArrowLeft'  || e.key === 'a' || e.key === 'A') keys.left  = true;
   if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
 });
@@ -692,7 +805,7 @@ function resetGame(keepCompare = false) {
     seedRng(currentSeed);
   }
   state = {
-    running: false, over: false, score: 0, best: prevBest,
+    running: false, paused: false, over: false, score: 0, best: prevBest,
     level: 1, frame: 0, player: mkPlayer(), obstacles: [],
     roadOffset: 0, particles: [],
     spawnInterval: 60, spawnTimer: 0, baseSpeed: 3.5,
@@ -700,6 +813,11 @@ function resetGame(keepCompare = false) {
     levelUpMsg: null,
     compareMode: keepCompare ? prevCompare : false
   };
+  document.getElementById('score-val').textContent = state.score;
+  document.getElementById('canvas-score-val').textContent = state.score;
+  document.getElementById('best-val').textContent = state.best;
+  document.getElementById('level-val').textContent = state.level;
+  updateLevelPips();
 }
 resetGame();
 
@@ -996,7 +1114,12 @@ function loop() {
         document.getElementById('btn-compare').disabled = false;
       }
       drawFrame();
-      if (ai.on) rlCrash(state.score); else showOverlay('crash');
+      if (ai.on) {
+        rlCrash(state.score);
+      } else {
+        showOverlay('crash');
+        setTimeout(openHumanCrashPrompt, 250);
+      }
       return;
     }
   }
@@ -1028,8 +1151,10 @@ function loop() {
   }
 
   document.getElementById('score-val').textContent = state.score;
+  document.getElementById('canvas-score-val').textContent = state.score;
   document.getElementById('best-val').textContent  = state.best;
   document.getElementById('level-val').textContent = state.level;
+  updateLevelPips();
   drawFrame();
   animId = requestAnimationFrame(loop);
 }
@@ -1042,33 +1167,50 @@ function showOverlay(mode) {
   const btn = document.getElementById('ov-btn');
   const icon = document.getElementById('ov-icon');
   const scoreRow = document.getElementById('ov-score-row');
+  const ilActions = document.getElementById('crash-il-actions');
+  const recordBtn = document.getElementById('crash-record-more');
+  const pretrainBtn = document.getElementById('crash-pretrain');
+  ov.dataset.mode = mode;
 
   if (mode === 'win') {
     if (icon) icon.textContent = '🏆';
-    h2.textContent   = 'YOU WIN';
+    h2.textContent   = 'GAME';
     h2.style.color   = '#ffd700';
-    p.innerHTML      = 'All 5 levels cleared!';
+    p.textContent    = state.score.toLocaleString();
     btn.textContent  = 'PLAY AGAIN';
   } else {
     if (icon) icon.textContent = '💥';
-    h2.textContent   = 'CRASHED';
+    h2.textContent   = 'GAME';
     h2.style.color   = '#fff';
-    p.innerHTML      = ai.recording && ilFlow.active && !ai.on
-      ? 'Click <b>PLAY AGAIN</b> to decide what to do with your demos.'
-      : 'Keep going!';
+    p.textContent    = state.score.toLocaleString();
     btn.textContent  = 'PLAY AGAIN';
   }
 
   if (scoreRow) {
     scoreRow.innerHTML = `
       <div class="overlay-score-item">
-        <span class="overlay-score-label">Score</span>
-        <span class="overlay-score-num">${state.score}</span>
+        <span class="overlay-score-label">Level</span>
+        <span class="overlay-score-num">${state.level}</span>
+      </div>
+      <div class="overlay-score-item">
+        <span class="overlay-score-label">Distance</span>
+        <span class="overlay-score-num">${(state.score / 1000).toFixed(1)}km</span>
       </div>
       <div class="overlay-score-item">
         <span class="overlay-score-label">Best</span>
-        <span class="overlay-score-num">${state.best}</span>
+        <span class="overlay-score-num">${state.best.toLocaleString()}</span>
       </div>`;
+  }
+
+  if (ilActions) {
+    const showILActions = mode === 'crash' && !ai.on;
+    ilActions.classList.toggle('visible', showILActions);
+    if (recordBtn) recordBtn.innerHTML = ai.recording ? '▶&nbsp;&nbsp;Record More' : '●&nbsp;&nbsp;Record Demos';
+    if (pretrainBtn) {
+      const hasDemos = ilFlow.demoCount > 0 || ai.recording;
+      pretrainBtn.disabled = !hasDemos;
+      pretrainBtn.title = hasDemos ? 'Train on recorded demos' : 'Record at least one demo first';
+    }
   }
 
   ov.style.display = 'flex';
@@ -1078,16 +1220,38 @@ document.getElementById('ov-btn').addEventListener('click', async () => {
   if (animId) cancelAnimationFrame(animId);
   document.getElementById('overlay').style.display = 'none';
 
-  // If the user was recording demos, show the IL decision modal instead of restarting
-  if (ai.recording && ilFlow.active && !ai.on) {
-    await flushBuffer();
-    const countEl = document.getElementById('il-demo-count');
-    if (countEl) countEl.textContent = ilFlow.demoCount;
-    document.getElementById('il-decision-modal').classList.add('open');
-    return;
-  }
-
   resetGame(); state.running = true;
+  loop();
+});
+
+document.getElementById('crash-record-more').addEventListener('click', () => {
+  if (animId) cancelAnimationFrame(animId);
+  ai.recording = true;
+  ilFlow.active = true;
+  showRecordingBar();
+  document.getElementById('overlay').style.display = 'none';
+  resetGame();
+  state.running = true;
+  loop();
+});
+
+document.getElementById('crash-pretrain').addEventListener('click', async () => {
+  if (ai.recording && ilFlow.active) await flushBuffer();
+  if (ilFlow.demoCount <= 0) return;
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('il-decision-pretrain').click();
+});
+
+document.getElementById('crash-skip-il').addEventListener('click', async () => {
+  await post('/il_reset', {});
+  ai.recording = false;
+  ilFlow.active = false;
+  hideRecordingBar();
+  document.getElementById('demo-val').textContent = '0';
+  document.getElementById('overlay').style.display = 'none';
+  if (animId) cancelAnimationFrame(animId);
+  resetGame();
+  state.running = true;
   loop();
 });
 
@@ -1686,14 +1850,23 @@ document.getElementById('il-onboard-yes').addEventListener('click', () => {
   document.getElementById('il-onboard-modal').classList.remove('open');
   ilFlow.active = true;
   ai.recording = true;
-  const bar = document.getElementById('ai-info-bar');
-  if (bar) { bar.classList.remove('hidden'); document.getElementById('ai-info-text').textContent = 'Recording demos — play a few rounds!'; }
+  showRecordingBar();
+  if (state.over) {
+    if (animId) cancelAnimationFrame(animId);
+    resetGame();
+    document.getElementById('overlay').style.display = 'none';
+  }
   state.running = true;
   loop();
 });
 
 document.getElementById('il-onboard-no').addEventListener('click', () => {
   document.getElementById('il-onboard-modal').classList.remove('open');
+  if (state.over) {
+    if (animId) cancelAnimationFrame(animId);
+    resetGame();
+    document.getElementById('overlay').style.display = 'none';
+  }
   state.running = true;
   loop();
 });
@@ -1703,6 +1876,9 @@ document.getElementById('il-onboard-no').addEventListener('click', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 document.getElementById('il-decision-more').addEventListener('click', () => {
   document.getElementById('il-decision-modal').classList.remove('open');
+  ai.recording = true;
+  ilFlow.active = true;
+  showRecordingBar();
   if (animId) cancelAnimationFrame(animId);
   resetGame(); state.running = true;
   document.getElementById('overlay').style.display = 'none';
@@ -1743,8 +1919,7 @@ document.getElementById('il-decision-pretrain').addEventListener('click', async 
           `Trained on ${data.samples} demos. The AI will now fine-tune with PPO — starting with human-level moves!`;
         ai.recording = false;
         ilFlow.active = false;
-        const bar2 = document.getElementById('ai-info-bar');
-        if (bar2) { bar2.classList.add('hidden'); }
+        hideRecordingBar();
         document.getElementById('il-progress-title').textContent = '✓ Training Complete';
         stats.textContent = 'Done!';
         resultArea.style.display = 'block';
@@ -1767,6 +1942,7 @@ document.getElementById('il-decision-skip').addEventListener('click', async () =
   await post('/il_reset', {});
   ai.recording = false;
   ilFlow.active = false;
+  hideRecordingBar();
   document.getElementById('demo-val').textContent = '0';
   if (animId) cancelAnimationFrame(animId);
   resetGame(); state.running = true;
@@ -1783,9 +1959,7 @@ document.getElementById('il-result-start-rl').addEventListener('click', () => {
   document.getElementById('il-result-area').style.display = 'none';
   document.getElementById('il-progress-bar').style.width = '0%';
   ai.on = true;
-  const btn = document.getElementById('btn-ai');
-  btn.innerHTML = '<span class="icon">&#129302;</span> RL: On';
-  btn.classList.add('active-ai');
+  setRLButtonState();
   if (animId) cancelAnimationFrame(animId);
   resetGame(); state.running = true;
   document.getElementById('overlay').style.display = 'none';

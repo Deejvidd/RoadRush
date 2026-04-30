@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Road Rush</title>
+  <link rel="icon" href="data:,">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,122 +17,114 @@
   <div id="menu-screen">
     <canvas id="menu-bg"></canvas>
     <div class="menu-content">
-      <div class="menu-badge">Neural Network Powered</div>
-      <h1 class="menu-title">Road Rush</h1>
-      <p class="menu-subtitle">AI &nbsp; Learning &nbsp; Lab</p>
-      <div class="menu-divider"></div>
-      <button class="menu-start-btn" id="menu-start">Play</button>
-      <p class="menu-hint">
-        <kbd>&larr;</kbd> <kbd>&rarr;</kbd> or <kbd>A</kbd> <kbd>D</kbd> to steer
-      </p>
+      <div class="menu-badge">⬡ &nbsp;ARCADE RACER&nbsp; ⬡</div>
+      <h1 class="menu-title"><span>Road</span><span>Rush</span></h1>
+      <div class="menu-divider"><span></span></div>
+      <div class="menu-actions">
+        <button class="rr-btn rr-btn-primary menu-action" id="menu-start">▶&nbsp;&nbsp;Play</button>
+        <button class="rr-btn rr-btn-ghost menu-action" id="menu-record" type="button">●&nbsp;&nbsp;Record Demos</button>
+      </div>
+      <p class="menu-hint"><kbd>&larr;</kbd> <kbd>&rarr;</kbd> or <kbd>A</kbd> <kbd>D</kbd> to steer</p>
+      <p class="menu-version">v2.0.0</p>
     </div>
   </div>
 
   <!-- ── GAME SCREEN ────────────────────────────────────────────── -->
   <div id="game-screen">
-
-    <!-- Left: Canvas area -->
-    <div>
-      <div class="game-title-strip">
-        <span class="game-title-text">Road Rush</span>
-        <span class="game-title-sub">AI Lab</span>
-      </div>
+    <div class="hud-topbar">
+      <div class="hud-brand"><span></span><strong>ROAD<b>RUSH</b></strong></div>
+      <div class="hud-line"></div>
       <div id="hud">
-        <div>SCORE <span id="score-val">0</span></div>
-        <div>BEST <span id="best-val">0</span></div>
-        <div>LVL <span id="level-val">1</span></div>
+        <div class="hud-stat"><small>Score</small><span id="score-val">0</span></div>
+        <div class="hud-line"></div>
+        <div class="hud-stat"><small>Best</small><span id="best-val">0</span></div>
+        <div class="hud-line"></div>
+        <div class="hud-stat"><small>Level</small><span>LVL <b id="level-val">1</b></span></div>
+        <div class="hud-line"></div>
+        <div class="hud-lives" aria-label="Lives"><i></i><i></i><i></i></div>
       </div>
-      <div id="canvas-wrap">
-        <canvas id="gc" width="480" height="720"></canvas>
-        <div id="overlay">
-          <div class="overlay-icon" id="ov-icon">💥</div>
-          <h2 id="ov-title"></h2>
-          <p id="ov-text"></p>
-          <div class="overlay-score-row" id="ov-score-row"></div>
-          <button id="ov-btn">RETRY</button>
-        </div>
-        <!-- Countdown overlay -->
-        <div id="countdown-overlay">
-          <span id="countdown-text"></span>
-        </div>
-        <!-- Debug overlay (toggle with ` key) -->
-        <div id="debug-overlay"></div>
-      </div>
-      <!-- AI Info Bar (shown when model loaded / AI on) -->
-      <div id="ai-info-bar" class="ai-info-bar hidden">
-        <span class="ai-info-dot"></span>
-        <span id="ai-info-text">AI Ready</span>
-      </div>
-      <div id="ctrl-hint">&larr; &rarr; steer &nbsp;&bull;&nbsp; Watch AI learn in real-time &nbsp;&bull;&nbsp; <kbd>`</kbd> debug</div>
+      <button class="hud-pause-btn" id="btn-pause" type="button">⏸</button>
     </div>
 
-    <!-- Right: Control Panel -->
+    <div class="game-main">
+      <div class="game-canvas-region">
+        <i class="corner corner-tl"></i><i class="corner corner-tr"></i>
+        <i class="corner corner-bl"></i><i class="corner corner-br"></i>
+        <div class="canvas-score-overlay">SCORE: <span id="canvas-score-val">0</span></div>
+        <div id="canvas-wrap">
+          <canvas id="gc" width="480" height="720"></canvas>
+          <div id="overlay">
+            <div class="gameover-line gameover-line-top"></div>
+            <div class="overlay-icon" id="ov-icon">💥</div>
+            <h2 id="ov-title"></h2>
+            <p id="ov-text"></p>
+            <div class="overlay-score-row" id="ov-score-row"></div>
+            <div class="crash-il-actions" id="crash-il-actions">
+              <button class="rr-btn rr-btn-ghost rr-btn-sm" id="crash-record-more" type="button">●&nbsp;&nbsp;Record Demos</button>
+              <button class="rr-btn rr-btn-amber rr-btn-sm" id="crash-pretrain" type="button">🧠&nbsp;&nbsp;Pretrain Now</button>
+              <button class="rr-btn rr-btn-ghost rr-btn-sm" id="crash-skip-il" type="button">⚡&nbsp;&nbsp;Play Without IL</button>
+            </div>
+            <button id="ov-btn" class="rr-btn rr-btn-primary rr-btn-lg">▶&nbsp;&nbsp;Play Again</button>
+            <button id="ov-menu-btn" class="rr-btn rr-btn-ghost rr-btn-lg" type="button">Menu</button>
+            <div class="gameover-line gameover-line-bottom"></div>
+          </div>
+          <div id="countdown-overlay"><span id="countdown-text"></span></div>
+          <div id="debug-overlay"></div>
+        </div>
+        <div id="ai-info-bar" class="ai-info-bar hidden">
+          <span class="ai-info-dot"></span>
+          <span id="ai-info-text">AI Ready</span>
+        </div>
+      </div>
+
     <div class="side-panel">
 
-      <!-- Primary Controls: RL + Sensors + Compare -->
-      <div class="panel-primary">
+      <div class="rl-status-card">
         <button class="ctrl-btn ctrl-btn-mega" id="btn-ai">
           <span class="ctrl-mega-icon">&#129302;</span>
           <div class="ctrl-mega-body">
-            <div class="ctrl-mega-title">RL: Off</div>
-            <div class="ctrl-mega-sub">Reinforcement Learning</div>
+            <div class="ctrl-mega-title">RL Agent</div>
+            <div class="ctrl-mega-sub">○ Offline</div>
           </div>
+          <span class="rl-switch" aria-hidden="true"><i></i></span>
         </button>
-        <div class="btn-group-row" style="margin-top:6px">
-          <button class="ctrl-btn ctrl-btn-action" id="btn-sensors">
-            <span class="icon">&#128065;</span> Sensors
-          </button>
-          <button class="ctrl-btn ctrl-btn-action" id="btn-compare" disabled
-                  title="Play a human run first to enable comparison">
-            <span class="icon">&#128123;</span> Compare
-          </button>
-          <button class="ctrl-btn ctrl-btn-action" id="btn-exit-compare"
-                  style="display:none">
-            <span class="icon">&#10005;</span> Exit
-          </button>
+        <button class="ctrl-btn ctrl-btn-action" id="btn-sensors"><span class="icon">&#128065;</span> Sensors</button>
+        <div class="rl-metrics">
+          <div><small>AVG REWARD</small><strong id="avg-val">0</strong></div>
+          <div><small>EPISODE</small><strong id="ep-val">0</strong></div>
         </div>
       </div>
 
-      <!-- Section: Learn from Human -->
       <div class="panel-section">
-        <div class="panel-section-label">&#127918; Learn</div>
+        <div class="panel-section-label">▸ Learn</div>
         <div class="panel-card section-learn">
+          <span id="demo-val" class="sr-only">0</span>
           <div class="btn-group">
             <button class="ctrl-btn ctrl-btn-secondary" id="btn-il-sessions">
-              <span class="icon">&#128196;</span> IL Sessions
+              <span class="icon">&#127918;</span> Imitation
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Section: Training -->
       <div class="panel-section">
         <div class="panel-section-label">&#9889; Training</div>
         <div class="panel-card section-train">
-          <div class="btn-group btn-group-row">
-            <button class="ctrl-btn" id="btn-fast-train">
-              <span class="icon">&#9889;</span> Fast Train
-            </button>
-            <button class="ctrl-btn" id="btn-snapshots">
-              <span class="icon">&#128247;</span> Snaps
-            </button>
-          </div>
+          <button class="hidden-control" id="btn-fast-train" type="button"></button>
           <div class="btn-group" style="margin-top:5px">
             <button class="ctrl-btn ctrl-btn-race" id="btn-model-race">
-              <span class="icon">&#9876;</span> Race Models
+              <span class="icon">&#9873;</span> Race Models
             </button>
           </div>
-          <canvas id="train-graph" width="166" height="86" style="margin-top:8px;display:block"></canvas>
-          <div class="graph-legend">
-            <span class="graph-legend-item"><span class="legend-dot" style="background:#00e5ff"></span>Score</span>
-            <span class="graph-legend-item"><span class="legend-dot" style="background:#4cff91"></span>Avg20</span>
-          </div>
+          <button class="ctrl-btn ctrl-btn-secondary" id="btn-snapshots" type="button"><span class="icon">&#128194;</span> Pretrained Models</button>
+          <button class="ctrl-btn ctrl-btn-compare" id="btn-compare" disabled title="Play a human run first to enable comparison"><span class="icon">&#9672;</span> Imitation Models</button>
+          <button class="ctrl-btn ctrl-btn-action" id="btn-exit-compare" style="display:none"><span class="icon">&#10005;</span> Exit</button>
+          <canvas id="train-graph" width="166" height="56" class="hidden-control"></canvas>
         </div>
       </div>
 
-      <!-- Section: Model -->
       <div class="panel-section">
-        <div class="panel-section-label">&#128190; Model</div>
+        <div class="panel-section-label">&#9672; Model</div>
         <div class="panel-card section-model">
           <div class="btn-group btn-group-row">
             <button class="ctrl-btn" id="btn-save">
@@ -148,7 +142,6 @@
         </div>
       </div>
 
-      <!-- Status Dashboard -->
       <div class="panel-card status-card">
         <div class="status-grid-v2">
           <div class="stat-block">
@@ -156,30 +149,37 @@
             <span class="stat-block-value" id="srv-status">...</span>
           </div>
           <div class="stat-block">
-            <span class="stat-block-label">Episode</span>
-            <span class="stat-block-value" id="ep-val">0</span>
-          </div>
-          <div class="stat-block">
             <span class="stat-block-label">Epsilon</span>
             <span class="stat-block-value" id="eps-val">1.000</span>
           </div>
-          <div class="stat-block">
-            <span class="stat-block-label">Avg (20)</span>
-            <span class="stat-block-value" id="avg-val">0</span>
-          </div>
-        </div>
-        <div class="stat-demos-row">
-          <span class="stat-block-label">Demos recorded:</span>
-          <span class="stat-block-value" id="demo-val">0</span>
         </div>
       </div>
 
-      <!-- Footer: Leaderboard + Sound -->
       <div class="panel-footer-row">
-        <button class="ctrl-btn ctrl-btn-icon" id="btn-leaderboard" title="Leaderboard">&#127942;</button>
+        <button class="hidden-control" id="btn-leaderboard" title="Leaderboard" type="button"></button>
         <button class="ctrl-btn ctrl-btn-icon" id="btn-sound" title="Sound">&#128264;</button>
+        <button class="ctrl-btn ctrl-btn-icon" id="btn-reset-panel" title="Reset">&#8635; Reset</button>
       </div>
 
+    </div>
+    </div>
+
+    <div class="hud-bottombar">
+      <button class="rr-btn rr-btn-ghost rr-btn-sm" id="btn-load-bottom" type="button">📂&nbsp;&nbsp;Load</button>
+      <button class="rr-btn rr-btn-ghost rr-btn-sm" id="btn-restart-bottom" type="button">↺&nbsp;&nbsp;Restart</button>
+    </div>
+  </div>
+
+  <div id="pause-menu" class="pause-overlay">
+    <div class="pause-card">
+      <header><span></span><h2>Paused</h2><kbd>ESC</kbd></header>
+      <div class="pause-actions">
+        <button class="rr-btn rr-btn-primary" id="pause-resume" type="button">▶&nbsp;&nbsp;Resume</button>
+        <button class="rr-btn rr-btn-ghost" id="pause-restart" type="button">↺&nbsp;&nbsp;Restart</button>
+        <button class="rr-btn rr-btn-ghost" type="button">⚙&nbsp;&nbsp;Settings</button>
+        <hr>
+        <button class="rr-btn rr-btn-danger" id="pause-menu-btn" type="button">✕&nbsp;&nbsp;Quit to Menu</button>
+      </div>
     </div>
   </div>
 
